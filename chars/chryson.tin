@@ -20,9 +20,6 @@
     #nop %0;
     #gag {^HP:};
     #gag {^$};
-    #delay {1} {
-        #send {auto missile, fire, pound, cut, shock @math{$guild[GuildLevel]*10}}
-    };
 }
 
 /event.register combatEnd chryson _combat_end;
@@ -30,6 +27,15 @@
     #nop %0;
     #ungag {^HP:};
     #ungag {^$};
+}
+
+/event.register GMCP.Char.Vitals chryson /heal;
+#alias {/heal} {
+    #nop %0;
+    #if {$guild[transfer] == 1 && $char[hppct] < 90} {
+        /send transfer;
+        #var guild[transfer] 0;
+    };
 }
 
 #nop ACTIONS ------------------------------------------------------------------
@@ -41,31 +47,35 @@
     /event.raise prompt.combat;
 
     #var enemy[hp] {%6};
-    /status_draw;
 
-    #if {$guild[transfer] && $char[hppct] < 95} {
-        #var guild[transfer] 0;
-        /send transfer;
-    };
-    #if {$char[hppct] < 100 && $guild[atombeam]} {/send atombeam};
-    #nop #send {fire};
-    #nop #send {missile $GMCP[Char][Status][aim]};
-    #nop #send {pound};
-    #nop #send {shock @math{$guild[GuildLevel]*10}};
-    #nop #send {cut};
+    #nop Does this damage too? Fire it when we can.;
+    #if {$guild[atombeam] && $char[hppct] < 100} {#send {atombeam}};
+
+    #nop Guild attacks;
+    #send {shock @math{$guild[GuildLevel]*10}};
+    #send {fire};
+    #send {missile $GMCP[Char][Status][aim]};
+    #send {pound};
+    #send {cut};
     #if {$char[cppct] > 25} {#send {devastate}};
     #send {headbutt};
+
+    /status_draw;
 }
 
 #action {^[IDISP] %*} {
     #switch {"%1"} {
         #case {"You are awarded [ %d ] GEXP for your kill."} {/got_kill};
+
         #case {"Atomic scanners reset."} {#var guild[atombeam] 1};
         #case {"Atomic extractor recharging."} {#var guild[atombeam] 0};
-        #case {"Complete power transfer successful."} {#var guild[transfer] 1};
+
+        #case {"Transfer power back online."} {#var guild[transfer] 1};
+        #case {"Transference banks are still recharging."} {#var guild[transfer] 0};
+
         #case {"Autonomous Combat Protocols now set to: missile,fire,pound,cut,shock %d."} {#line gag};
         #case {"Executing enhanced reflex fast-attack routine."} {#line gag};
-        #case {"%1 implant %2."} {/setimplant %0}
+        #case {"%1 implant %2."} {/setimplant %0};
         #nop #default {#line gag};
     }
 } {8}
@@ -193,3 +203,8 @@
         #default {#showme {Usage: /panel on/off - inactivate auto and solar}}
     }
 }
+
+#nop GAGS ---------------------------------------------------------------------
+#gag {^Your exoskeleton completely absorbs the attack!$};
+
+#class chryson close;

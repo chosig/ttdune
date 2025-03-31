@@ -16,6 +16,7 @@
 
 #macro {\eq} {/send /fkill};
 #macro {\ew} {/send /rkill};
+#macro {\es} {/loot};
 
 #nop Numpad
 #macro {\eOp} {/send /fkill};  #nop 0;

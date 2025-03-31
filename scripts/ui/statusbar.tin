@@ -83,7 +83,7 @@
 
 #alias {/status_draw} {
     #nop %0;
-    #delay {0.1} {/status_clear};
+    #nop /status_clear;
     #delay {0.1} {#line ignore #showme {@hp{} @cp{} @enemy{}@mat{}@pwr{}@fuses{}@burden{}@gxp{}@xp{}@money{}} {-2} {1}};
 }
 

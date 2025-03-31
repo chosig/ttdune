@@ -1,0 +1,10 @@
+#class areas/spire kill;
+#class areas/spire open;
+
+#nop Area specific script for the IX Spire
+#nop TODO: Make something from this
+
+#nop The entire structure of the building changes around you!;                                                         │
+#nop Flowmetal erupts into the air and you lose all sense of orientation.;
+
+#class areas/spire close;

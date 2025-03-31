@@ -3,6 +3,8 @@
 
 #var _event {};
 
+#nop TODO: Make it weighted to order the way commands are sent.
+
 #nop /event.raise <event>
 #alias {/event.raise} {
     #local name {};

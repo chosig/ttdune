@@ -1,7 +1,21 @@
 #class dune kill;
 #class dune open;
 
+#info system save;
+#info configs save;
+#info environ save;
 
+#nop convert numbered CONFIGS list to key-value pairs;
+#nop see https://github.com/scandum/tintin/issues/171;
+#if {&{info[CONFIGS][1]}} {
+    #foreach {*info[CONFIGS][]} num {
+        #local config $info[CONFIGS][$num];
+        #local key {$config[arg1]};
+        #local val {$config[arg2]};
+        #var info[CONFIGS][$key] {$val};
+    };
+    #unvar info[CONFIGS][%+1..d];
+};
 
 #nop initial split
 #split 0 1;
@@ -14,6 +28,8 @@
 
 #nop Until I get a character selector...;
 #read $dune[dir]/chars/chryson.tin;
+
+#config {repeat enter} on;
 
 #ssl dune dunemud.net 6788;
 
