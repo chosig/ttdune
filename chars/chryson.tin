@@ -1,0 +1,195 @@
+#class chryson kill;
+#class chryson open;
+
+#nop INIT VARIABLES -----------------------------------------------------------
+#var guild {
+    {atombeam} {1}
+    {matlimit} {75}
+    {transfer} {1}
+}
+
+#nop EVENTS -------------------------------------------------------------------
+/event.register GMCP.Char.Guild.Stats updateGuildStats _updateGuildStats;
+#alias _updateGuildStats {
+    #nop %0;
+    #cat guild {%0};
+}
+
+/event.register combatStart chryson _combat_start;
+#alias {_combat_start} {
+    #nop %0;
+    #gag {^HP:};
+    #gag {^$};
+    #delay {1} {
+        #send {auto missile, fire, pound, cut, shock @math{$guild[GuildLevel]*10}}
+    };
+}
+
+/event.register combatEnd chryson _combat_end;
+#alias {_combat_end} {
+    #nop %0;
+    #ungag {^HP:};
+    #ungag {^$};
+}
+
+#nop ACTIONS ------------------------------------------------------------------
+#action {^HP:%d/%d CP:%d/%d $:%d B:%d\%} {
+    #var char[burden] %6;
+}
+
+#action {^[  HP: %d/%d  CP: %d/%d  Power: %d  Target: %d\%  SA: %w  ]} {
+    /event.raise prompt.combat;
+
+    #var enemy[hp] {%6};
+    /status_draw;
+
+    #if {$guild[transfer] && $char[hppct] < 95} {
+        #var guild[transfer] 0;
+        /send transfer;
+    };
+    #if {$char[hppct] < 100 && $guild[atombeam]} {/send atombeam};
+    #nop #send {fire};
+    #nop #send {missile $GMCP[Char][Status][aim]};
+    #nop #send {pound};
+    #nop #send {shock @math{$guild[GuildLevel]*10}};
+    #nop #send {cut};
+    #if {$char[cppct] > 25} {#send {devastate}};
+    #send {headbutt};
+}
+
+#action {^[IDISP] %*} {
+    #switch {"%1"} {
+        #case {"You are awarded [ %d ] GEXP for your kill."} {/got_kill};
+        #case {"Atomic scanners reset."} {#var guild[atombeam] 1};
+        #case {"Atomic extractor recharging."} {#var guild[atombeam] 0};
+        #case {"Complete power transfer successful."} {#var guild[transfer] 1};
+        #case {"Autonomous Combat Protocols now set to: missile,fire,pound,cut,shock %d."} {#line gag};
+        #case {"Executing enhanced reflex fast-attack routine."} {#line gag};
+        #case {"%1 implant %2."} {/setimplant %0}
+        #nop #default {#line gag};
+    }
+} {8}
+
+#action {^There is nothing here you can kill.} {
+    /loot;
+}
+
+#nop Atombeam, healing attack
+#action {^%w shudders slightly as you drain %w energy into your exoskeleton.} {
+    #var guild[atombeam] 0;
+}
+
+
+#nop ALIASES ------------------------------------------------------------------
+#alias {/setimplant} {
+    #local implant_list {
+        {Muscle Replacement} {musrep}
+        {Enhanced Reflexes} {ereflex}
+        {Solar Panels} {solar}
+        {Autorepair} {autorep}
+        {Thermographic Optics} {thermo}
+        {Nano Factory} {factory}
+        {Laser Guidance} {guidance}
+        {Auxiliary Batteries} {batteries}
+        {ICTS Controller} {icontrol}
+        {Temporal Drive} {tdrive}
+        {Polymathematics Chip} {pmchip}
+        {Autonomous Combat Processors} {auto}
+    };
+
+    #local implant {};
+    #local status {};
+    #regex %0 {(.*) implant (.*)\.} {
+        #var implant $implant_list[&1];
+        #switch {"&2"} {
+            #case {"re-activated"} {#var status 1};
+            #case {"deactivated"} {#var status 0};
+        };
+    };
+    #var $guild[$implant] $status;
+    #showme {GUILD: $implant is set to "$status"};
+}
+#alias {/got_kill} {
+    /event.raise combatEnd;
+    #math enemy[count] {$enemy[count] - 1};
+
+    #if {"$enemy[race]" == "ixian"} {/salvage} {absorb};
+
+    #if {$enemy[count] <= 0} {
+        #if {$char[killauto]} {/send fkill};
+
+        #if {$char[killroom]} {
+            /loot
+        }
+    };
+
+    #var enemy[name] {None};
+    #var enemy[hp] {0};
+    #var enemy[race] {};
+}
+
+#alias {/fkill} {
+    #var enemy[count] 0;
+    #var char[killauto] 1;
+    fkill;
+}
+
+#alias {/rkill} {
+    #var enemy[count] 0;
+    #var char[killroom] 1;
+    kill all;
+}
+
+#alias {/loot} {
+    #var char[killauto] 0;
+    #var char[killroom] 0;
+    #var enemy[count] 0;
+    
+    #send {get all};
+    #send {store all sockets};
+    #if {$GMCP[Char][Guild][Stats][Material] < $guild[matlimit]} {
+        #send {drop all};
+        #send {convert all};
+    } {
+        #send {rsell all};
+    };
+}
+
+#alias {/salvage} {
+    #send {salvage corpse};
+    #send {convert slag};
+    #if {$guild[Material] < 90} {
+        #send {drop all salvage};
+        #send {get all socket};
+        #send {convert all};
+        #send {packstuff all salvage};
+    };
+    #elseif {$cube[active] == 0} {
+        #send {count salvage};
+    };
+    #else {
+        #send {drop all salvage};
+        #send {packstuff all salvage};
+    };
+}
+
+#alias {/levelup} {
+    #local cmd {advance level;advance str;advance con;advance dex;advance qui;advance wis;advance int};
+    #local i {};
+    #foreach {$cmd} {i} {#send {$i}};
+}
+
+#alias {/panel %w} {
+    #switch {"%1"} {
+        #case {"on"} {
+            deactivate auto;
+            activate solar;
+        };
+        #case {"off"} {
+            deactivate solar;
+            activate auto;
+          
+        };
+        #default {#showme {Usage: /panel on/off - inactivate auto and solar}}
+    }
+}

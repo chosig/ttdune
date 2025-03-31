@@ -1,0 +1,6 @@
+#class ui/pane/chat kill;
+#class ui/pane/chat open;
+
+#showme {UI/Pane/Chat loaded!}
+
+#class ui/pane/chat close;

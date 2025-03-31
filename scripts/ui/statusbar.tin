@@ -1,0 +1,93 @@
+#class ui/statusbar kill;
+#class ui/statusbar open;
+
+#var statusbar {};
+
+#function {hp} {
+    #local hpcur {@colscale{$char[hpcur];$char[hpmax]}$char[hpcur]<088>};
+    #local hpmax {@colscale{$char[hpcur];$char[hpmax]}$char[hpmax]<088>};
+    #local ret {};
+    #format ret {%s %s/%s} {<faa>\uf004<088>} {$hpcur} {$hpmax};
+    #return {$ret};
+};
+#function {cp} {
+    #local cpcur {@colscale{$char[cpcur];$char[cpmax]}$char[cpcur]<088>};
+    #local cpmax {@colscale{$char[cpcur];$char[cpmax]}$char[cpmax]<088>};
+    #local ret {};
+    #format ret {%s %s/%s} {<aff>\uf444<099>} {$cpcur} {$cpmax};
+    #return {$ret};
+};
+#function {enemy} {
+    #local hp {@colscale{$enemy[hp];100}$enemy[hp]};
+    #local name {};
+    #format name {%n} {$enemy[name]};
+    #local ret {};
+    #format ret {%s%+8s%s%+4s} {[<ecc>} {$name} {<099>:} {$hp<088>%%]};
+    #return {$ret};
+};
+
+#function {burden} {
+    #local ret {};
+    #format ret {%s%+3s%s} {[<F976841>B:<099>} {$char[burden]} {%]};
+    #return {$ret};
+}
+
+#function {gxp} {
+    #local gxcur {$GMCP[Char][Guild][Stats][GuildExp]};
+    #local gxmax {$GMCP[Char][Guild][Stats][NextGuildLevelCost]};
+    #local gxleft {@math{$gxmax - $gxcur}};
+    #local gxpct {@math{$gxcur * 100 / $gxmax}};
+
+    #local ret {};
+    #format ret {%s %s} {[<acf>G<ccc>$GMCP[Char][Guild][Stats][GuildLevel]<099>}  {<fca>@n2h{$gxleft}<099>]};
+    #return {$ret};
+}
+
+#function {xp} {
+    #local ret {};
+    #format ret {%s%s%s} {[X:} {@n2h{$GMCP[Char][Status][xp]}} {]};
+    #return {$ret};
+}
+
+#function {mat} {
+    #local ret {};
+    #format ret {%s%+3s%s} {[<ffa>M<099>:} {$GMCP[Char][Guild][Stats][Material]} {%]};
+    #return {$ret};
+}
+
+#function {pwr} {
+    #local ret {};
+    #format ret {%s%s%s} {[<aff>P<099>:} {@n2h{$GMCP[Char][Guild][Stats][Power]}} {]};
+    #return {$ret};
+}
+
+#function {money} {
+    #local ret {};
+    #format ret {%s%s%s} {[<afa>$<099>} {@n2h{$GMCP[Char][Status][money]}<bbb>|<099>@n2h{$GMCP[Char][Status][bankmoney]}} {]};
+    #return {$ret}
+}
+
+#function {fuses} {
+    #local ret {};
+    #format ret {%s%s%s} {[<fca>F<099>:} {$guild[Fuses]} {]};
+    #return {$ret};
+}
+#alias {/status_clear} {
+    #nop %0;
+    #local width {};
+    #screen {get} {cols} {width};
+    #local str {};
+    #loop 1 $width _ {#cat str { }};
+    #showme {$str} {-2};
+};
+
+#alias {/status_draw} {
+    #nop %0;
+    #delay {0.1} {/status_clear};
+    #delay {0.1} {#line ignore #showme {@hp{} @cp{} @enemy{}@mat{}@pwr{}@fuses{}@burden{}@gxp{}@xp{}@money{}} {-2} {1}};
+}
+
+/event.register GMCP.Char.Vitals update_status /status_draw;
+/event.register GMCP.Char.Guild.Stats update_status /status_draw;
+
+#class ui/statusbar close;

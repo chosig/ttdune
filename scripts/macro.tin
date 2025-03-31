@@ -1,0 +1,40 @@
+#class macro kill;
+#class macro open;
+
+#nop Vim style keybindings (alt+h = west);
+#macro {\eh} {/send w};
+#macro {\ej} {/send s};
+#macro {\ek} {/send n};
+#macro {\el} {/send e};
+#macro {\ey} {/send nw};
+#macro {\eu} {/send ne};
+#macro {\en} {/send sw};
+#macro {\em} {/send se};
+#macro {\ei} {/send u};
+#macro {\e,} {/send d};
+#macro {\ea} {/send l};
+
+#macro {\eq} {/send /fkill};
+#macro {\ew} {/send /rkill};
+
+#nop Numpad
+#macro {\eOp} {/send /fkill};  #nop 0;
+#macro {\eOq} {/send sw};     #nop 1;
+#macro {\eOr} {/send s};      #nop 2;
+#macro {\eOs} {/send se};     #nop 3;
+#macro {\eOt} {/send w};      #nop 4;
+#macro {\eOu} {/send l};      #nop 5;
+#macro {\eOv} {/send e};      #nop 6;
+#macro {\eOw} {/send nw};     #nop 7;
+#macro {\eOx} {/send n};      #nop 8;
+#macro {\eOy} {/send ne};     #nop 9;
+#macro {\eOj} {/send u};      #nop *;
+#macro {\eOm} {/send d};      #nop -;
+
+#alias /send {
+    #showme {<cca>%0};
+    %0
+}
+
+
+#class macro close;

@@ -1,0 +1,22 @@
+#class gag kill;
+#class gag open;
+
+#nop Stun glove;
+#gag {You can't stun again quite yet!};
+
+#nop Defence + expgen;
+#gag {^You {block|dodge}};
+#gag {feel more experienced!$};
+
+#nop Misses;
+#gag {%w {dodges|blocks} your attack.$};
+
+#nop Headbutt;
+#gag {^Your headbutt failed to connect.};
+#gag {^Ouch, that hurts.};
+#gag {^Your head cannot take that sort of punishment.};
+
+#nop Devastate;
+#gag {^You have not recovered enough to use that technique.};
+
+#class gag close;

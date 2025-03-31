@@ -1,0 +1,20 @@
+#class dune kill;
+#class dune open;
+
+
+
+#nop initial split
+#split 0 1;
+
+#var dune[dir] {$info[SYSTEM][CWD]};
+#var scripts {$dune[dir]/scripts};
+
+#nop Load scrips;
+#read $scripts/session.tin;
+
+#nop Until I get a character selector...;
+#read $dune[dir]/chars/chryson.tin;
+
+#ssl dune dunemud.net 6788;
+
+#class dune close;

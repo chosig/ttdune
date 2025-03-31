@@ -1,0 +1,22 @@
+#class session kill;
+#class session open;
+
+#read $scripts/functions/init.tin;
+#read $scripts/gmcp.tin;
+
+#read $scripts/event.tin;
+#read $scripts/events/init.tin;
+
+#read $scripts/cube.tin;
+#read $scripts/gag.tin;
+#read $scripts/macro.tin;
+
+#read $scripts/ui/init.tin;
+#nop Space;
+#action {Your %!w ship has arrived. Please enter your ship.} {enter ship};
+
+
+#class session close;
+
+#nop The entire structure of the building changes around you!;                                                         │
+#nop Flowmetal erupts into the air and you lose all sense of orientation.;

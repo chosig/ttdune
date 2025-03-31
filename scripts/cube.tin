@@ -1,0 +1,111 @@
+#class cube kill;
+#class cube open;
+
+#var cube {
+    {active} {0}
+    {open} {1}
+    {salvage} {
+        {amount} {0}
+        {base} {8}
+    }
+    {shard} {
+        {amount} {0}
+        {base} {4}
+    }
+}
+
+#nop Carried salvage/shards
+#nop You are carrying 3 shards.
+#action {%!{^You are carrying (\d+) (salvage|shard)s?(?:\.|, of which (\d+) are in containers\.)$}} {
+    #var cube[%2][amount] %1;
+
+    #nop Check if we have enough to run the cube, else backpackstuff;
+    #if {$cube[%2][amount] < $cube[%2][base]} {
+        #send {drop all %2};
+        #send {packstuff all %2};
+    } {
+        /cube %2 %1;
+    };
+};
+#action {%!{^You are not carrying any (salvage|shard)s\.$}} {#var cube[%1][amount] 0};
+
+#nop Cube open/closed check;
+#action {^You {open|close} the cube.} {
+    #switch {"%1"} {
+        #case {"open"} {#var cube[open] 1};
+        #case {"close"} {#var cube[open] 0};
+    }
+}
+
+#action {%!{^   \*Ixian Adric Cube \((open|closed)\)}} {
+    #switch {"%1"} {
+        #case {"open"} {#var cube[open] 1};
+        #case {"closed"} {#var cube[open] 0};
+    }
+}
+
+#nop Cube active;
+#action {^The cube starts to hum.$} {#var cube[active] 1}
+#action {^The cube is finished.} {
+    #var cube[active] 0;
+    #send {open cube};
+    #send {get all from cube};
+
+    #switch {"$cube[type]"} {
+        #case {"salvage"} {
+            #send {count shard};
+        };
+        #case {"shard"} {
+            #send {store all sockets};
+            #send {drop all shard};
+            #send {packstuff all shard};
+            #send {count shard};
+        }
+    };
+}
+#action {^Nothing happens. The cube is empty.} {
+    #var cube[active] 0;
+    #send {open cube};
+}
+
+#nop /cube <type> <amount>
+#alias {/cube} {
+    #nop If cube is active do nothing;
+    #if {$cube[active] == 1} {#return};
+
+    #if {"%2" == ""} {#send {count %1}};
+
+    #nop Set type so we know what to do when it's finished;
+    #var cube[type] %1;
+
+    #nop Make sure the cube is open and empty;
+    #if {$cube[open] == 0} {
+        #send {open cube};
+        #send {get all from cube};
+    };
+
+    #nop Figure out how many items we can run, salvages in multiples of 8, shards in 4.;
+    #local times {};
+    #math times {(%2 / $cube[%1][base]) * $cube[%1][base]};
+
+    #nop Load the cube;
+    #if {$times > 0} {
+        #nop In case we have salvage in backpacks, get them;
+        #send {get %1 from all backpack};
+
+        #nop Shard we only run 4 at a time, better with quantity of sockets than a high level;
+        #nop socket that we do not want;
+        #if {"%1" == "shard"} {#var times 4};
+
+        #loop 1 $times _ {
+            #send {put %1 in cube}
+        };
+        #send {close cube};
+        #send {activate cube};
+    };
+    #nop packstuff it for the case that a mob is killed while the cube is running;
+    #send {drop all %1};
+    #send {packstuff all %1};
+}
+
+#class cube close;

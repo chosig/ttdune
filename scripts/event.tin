@@ -1,0 +1,26 @@
+#class event kill;
+#class event open;
+
+#var _event {};
+
+#nop /event.raise <event>
+#alias {/event.raise} {
+    #local name {};
+    #foreach {*_event[%1][]} {name} {
+        #if {"$_event[%1][$name]" != ""} {$_event[%1][$name] %2};
+    };
+}
+
+#nop /event.register <event> <name> <func>
+#alias {/event.register} {
+    #var _event[%1][%2] {%3}
+}
+
+#nop /event.unregister <event> <name>
+#alias {/event.unregister} {
+    #unvar _event[%1][%2]
+}
+
+#read $scripts/events/combat.tin
+
+#class event close;

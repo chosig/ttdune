@@ -1,0 +1,52 @@
+#class {event/scombat} kill;
+#class {events/combat} open;
+
+#action {^You attack %w} {
+    #format enemy[name] {%l} {%1};
+    #if {"$enemy[count]" == ""} {#var enemy[count] 1} {#math enemy[count] {$enemy[count] +1}};
+    /event.raise combatStart {$enemy[name]};
+    evaluate $enemy[name];
+}
+
+#action {^You are fighting %w} {
+    #format enemy[name] {%l} {%1};
+}
+
+#action {^You turn to attack %w} {
+    #format {enemy[name]} {%l} {%1};
+    evaluate $enemy[name];
+    /event.raise combatStart {$enemy[name]};
+}
+
+#var {bodyparts} {
+    {body} {body}
+    {head} {head}
+    {chest} {chest}
+    {stomach} {stomach}
+    {right arm} {r_arm}
+    {left arm} {l_arm}
+    {right hand} {r_hand}
+    {left hand} {l_hand}
+    {right leg} {r_leg}
+    {left leg} {l_leg}
+    {right foot} {r_foot}
+    {left foot} {l_foot}
+}
+
+#nop Worker Drone appears to have weak armour on its right hand.;
+#action {^%!* appears to have weak armour on %!w %*.} {
+    #line gag;
+    #var enemy[weakness] {$bodyparts[%1]};
+    #delay {aim} {aim $bodyparts[%1]} {0.5};
+}
+
+#nop 150 levels of evaluate opponent seems to be needed to see race
+#action {^%!w belongs to the %w race.} {
+    #format enemy[race] {%l} {%1};
+    #line gag;
+    /event.raise combat_enemy_race {$enemy[race]};
+}
+
+
+
+#class {events/combat} close;

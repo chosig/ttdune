@@ -1,0 +1,2 @@
+#read $scripts/ui/comm.tin;
+#read $scripts/ui/statusbar.tin;

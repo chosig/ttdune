@@ -1,0 +1,93 @@
+#class {functions/numbers} kill;
+#class {functions/numbers} open;
+
+#function {math} {
+    #if {"%0" == ""} #return 0;
+    #local math {};
+    #math math {%0};
+    #return {$math};
+}
+
+#function {min} {
+    #local min {};
+    #local test {};
+    #foreach {%0} test {
+        #if {"$test" == ""} #continue;
+        #if {"$min" == ""} {
+            #local min {$test};
+        }; #elseif {$test < $min} {
+            #local min {$test};
+        };
+    };
+    #return {$min};
+}
+
+#function {max} {
+    #local max {};
+    #local test {};
+    #foreach {%0} test {
+        #if {"$test" == ""} #continue;
+        #if {"$max" == ""} {
+            #local max {$test};
+        }; #elseif {$test > $max} {
+            #local max {$test};
+        };
+    };
+    #return {$max};
+}
+
+#nop @clamp{<number>,<min>,<max>};
+#function {clamp} {
+    #local num {%1};
+    #if {$num < %2} {
+        #local num {%2};
+    };
+    #if {$num > %3} {
+        #local num {%3};
+    };
+    #return {$num};
+}
+
+#function {inc} {
+    #local amount {1};
+    #if {"%2" != ""} {#var amount %2};
+    #return @math{%1 + $amount}
+}
+
+#function {dec} {
+    #local amount {%1};
+    #if {"%2" != ""} {#var amount {%2}};
+    #return @math{%1 - $amount}
+}
+
+#function {n2h} {
+    #local number {%1};
+    #local len {};
+    #format len {%L} {%1};
+
+    #nop Billions;
+    #if {$len >= 10} {
+        #math number {$number / 1000000000.000};
+        #var number {${number}b};
+        #return $number
+    };
+
+    #nop Millions;
+    #elseif {$len >= 7} {
+        #math number {$number / 1000000.000};
+        #var number {${number}m};
+        #return $number
+    };
+
+    #nop Thousands;
+    #elseif {$len >= 4} {
+        #math number {$number / 1000.00};
+        #var number {${number}k};
+        #return {$number};
+    };
+
+    #else {#return $number}
+}
+
+
+#class {functions/numbers} close;

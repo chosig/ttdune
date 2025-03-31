@@ -1,0 +1,6 @@
+#class ui/pane/info kill;
+#class ui/pane/info open;
+
+#showme {UI/Pane/Info Loaded!};
+
+#class ui/pane/info close;

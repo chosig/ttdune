@@ -1,0 +1,6 @@
+#class ui/pane/map kill;
+#class ui/pane/map open;
+
+#showme {UI/Pane/Map loaded!};
+
+#class ui/pane/map close;

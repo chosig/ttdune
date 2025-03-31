@@ -1,0 +1,3 @@
+#read $scripts/ui/pane/chat.tin;
+#read $scripts/ui/pane/info.tin;
+#read $scripts/ui/pane/map.tin;

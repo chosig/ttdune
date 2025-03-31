@@ -1,0 +1,102 @@
+#class {gmcp} {kill};
+#class {gmcp} {open};
+
+#format {telnet[iac]}  {%a} {255};
+#format {telnet[dont]} {%a} {254};
+#format {telnet[do]}   {%a} {253};
+#format {telnet[wont]} {%a} {252};
+#format {telnet[will]} {%a} {251};
+#format {telnet[sb]}   {%a} {250};
+#format {telnet[se]}   {%a} {240};
+#format {telnet[gmcp]} {%a} {201};
+
+#alias {_gmcp.send %*} {
+    #send {$telnet[iac]$telnet[sb]$telnet[gmcp]core.supports.set [%1]$telnet[iac]$telnet[se]};
+}
+
+#event {IAC WILL GMCP} {
+    #send {$telnet[iac]$telnet[do]$telnet[gmcp]};
+    #send {$telnet[iac]$telnet[sb]$telnet[gmcp]core.hello {"client":"$info[SYSTEM][CLIENT_NAME]","version":"$info[SYSTEM][CLIENT_VERSION]"}$telnet[iac]$telnet[se]};
+    #send {$telnet[iac]$telnet[sb]$telnet[gmcp]core.supports.set ["Room 1", "Char 1", "Comm.Channel 1"]$telnet[iac]$telnet[se]};
+}
+
+#alias {debug {on|off}} {
+    #if {"%1" == "on"} { #variable {debug} {1}; };
+    #else { #variable {debug} {0} };
+    #showme { Debug is <139>$debug<099> };
+    #nop;
+}
+
+#alias {/gmcp_send}{#send {$telnet[iac]$telnet[sb]$telnet[gmcp]%0$telnet[iac]$telnet[se]}}
+
+#event {IAC SB GMCP Room.Info IAC SE} {
+    #cat {GMCP[Room][Info]} {%1};
+    /event.raise {GMCP.Room.Info} {%1};
+
+    #local g {%1};
+    #var room[name] {$g[name]};
+    #var room[environment] {$g[environment]};
+    #var room[exits] {$g[exits]};
+    #var room[num] {$g[num]};
+}
+
+#event {IAC SB GMCP Char.Name IAC SE} {
+    #cat {GMCP[Char][Name]} {%1};
+    /event.raise {GMCP.Char.Name} {%1};
+    #local g {%1};
+    #var char[name] {$g[name]};
+    #var char[guild] {$g[guild]}
+}
+
+#event {IAC SB GMCP Char.Vitals IAC SE} {
+    #cat {GMCP[Char][Vitals]} {%1};
+    /event.raise {GMCP.Char.Vitals} {%1};
+
+    #local s {%1};
+    #regex {$s[string]} {H:{\d+}\\/{\d+} M:{\d+}\\/{\d+}} {
+        #var {char[hpcur]} {&1};
+        #var {char[hpmax]} {&2};
+        #var {char[cpcur]} {&3};
+        #var {char[cpmax]} {&4};
+    };
+    #math char[hppct] {$char[hpcur] * 100 / $char[hpmax]};
+    #math char[cppct] {$char[cpcur] * 100 / $char[cpmax]};
+}
+
+#event {IAC SB GMCP Char.Stats IAC SE} {
+    #if {"$debug" == "1"} {#showme {GMCP Stats: %1}};
+    #cat {GMCP[Char][Stats]} {%1};
+    /event.raise {GMCP.Char.Stats} {%1};
+}
+
+#event {IAC SB GMCP Char.MaxStats IAC SE} {
+    #if {"$debug" == "1"} {#showme {GMCP: %1}};
+    #cat {GMCP[Char][MaxStats]} {%1};
+    /event.raise {GMCP.Char.MaxStats} {%1};
+}
+
+#event {IAC SB GMCP Char.Status IAC SE} {
+    #if {"$debug" == "1"} {#showme {GMCP: %1}};
+    #cat {GMCP[Char][Status]} {%1};
+    /event.raise {GMCP.Char.Status} {%1};
+}
+
+#event {IAC SB GMCP Char.Guild.Skills IAC SE} {
+    #if {"$debug" == "1"} {#showme {GMCP: %1}};
+    #cat {GMCP[Char][Guild][Skills]} {%1};
+    /event.raise {GMCP.Char.Guild.Skills} {%1};
+}
+
+#event {IAC SB GMCP Char.Guild.Stats IAC SE} {
+    #if {"$debug" == "1"} {#showme {GMCP Guild.Stats: %1}};
+    #cat {GMCP[Char][Guild][Stats]} {%1};
+    /event.raise {GMCP.Char.Guild.Stats} {%1};
+}
+
+#event {IAC SB GMCP Comm.Channel.Text IAC SE} {
+    #if {"$debug" == "1"} {#showme {GMCP: %1}};
+    #cat {GMCP[Comm]} {%1};
+    /event.raise {GMCP.Comm} {%1};
+}
+
+#class {gmcp} {close}
