@@ -74,14 +74,14 @@
 
     #nop Millions;
     #elseif {$len >= 7} {
-        #math number {$number / 1000000.000};
+        #math number {$number / 1000000.00};
         #var number {${number}m};
         #return $number
     };
 
     #nop Thousands;
     #elseif {$len >= 4} {
-        #math number {$number / 1000.00};
+        #math number {$number / 1000.0};
         #var number {${number}k};
         #return {$number};
     };

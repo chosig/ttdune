@@ -1,0 +1,320 @@
+#class {keybindings} {assign} {
+    #macro {\eq} {/fkill};
+    #macro {\ew} {/rkill};
+}
+
+#class shippai kill;
+#class shippai open;
+
+#nop Init variables;
+#var {char} {
+    {hpcur} {1000}
+    {hpmax} {1000}
+    {hppct} {100}
+    {cpcur} {1000}
+    {cpmax} {1000}
+    {cppct} {100}
+    {energy} {100}
+    {killauto} {0}
+    {killroom} {0}
+}
+#var {ability} {
+    {assess} {1}
+    {berserk} {1}
+    {bloodrage} {1}
+    {firstaid} {1}
+    {grenade} {1}
+    {reap} {1}
+    {rend} {1}
+    {thrash} {1}                                                                                                                                                                                                                                {thrust} {1}
+};
+#var {companion} {
+    {type} {@lower{$GMCP[Char][Guild][Companion][Type]}}
+    {hp} {$GMCP[Char][Guild][Companion][HitPointPercent]}
+};
+
+#nop GMCP for companion
+#event {IAC SB GMCP Char.Guild.Companion IAC SE} {
+    #if {"$debug" == "1"} {#showme {GMCP: %1}};
+    #cat {GMCP[Char][Guild][Companion]} {%1};
+    #var companion[type] {@lower{$GMCP[Char][Guild][Companion][Type]}};
+    #var companion[hp] {$GMCP[Char][Guild][Companion][HitPointPercent]};
+
+    #if {"$GMCP[Char][Guild][Companion][Bond]" == "No" && "$GMCP[Char][Guild][Companion][Status]" == "Summoned"} {bond};
+}
+
+#nop join trigger
+#action {^---\[ Speakers \]--- : Shippai has entered the game.} {
+    #local eq {gigasword;exoskeleton;all pack;plate;shieldbelt;cube;ring;shirt;amulet;skull-cap;cape;all glove;boots;pants;all salvage;all shard};
+    #foreach $eq {i} {#send {get $i}};
+    #unvar i;
+    #send {powerup};
+    #send {keep all};
+    #send {unkeep all salvage};
+
+    #nop TODO: set a config option for this;
+    #local stance {$GMCP[Char][Guild][Stats][WeaponStance]};
+    #if {"$stance" != "polearm"} {#send {stance polearm}};
+
+    #local companion {$GMCP[Char][Guild][Companion][Status]};
+    #if {"$companion" != "Summoned"} {#send {companion summon}};
+
+    #local bond {$GMCP[Char][Guild][Companion][Bond]};
+    #if {"$bond" != "Yes"} {
+        #delay 1 {#send {bond}} #nop delay to regen energy
+    };
+
+    #local type {$GMCP[Char][Guild][Companion][type]};
+    #if {$type != "Sentinel"} {#send {companion type sentinel}};
+}
+
+#nop Combat -------------------------------------------------------------------
+#nop --- Prompt
+#action {^HP: [%d/%d] CP: [%d/%d] ENERGY: [%d] COMP: [%d\%] ENEMY: %d\%} {
+    #var char[hpcur] %1;
+    #var char[hpmax] %2;
+    #math char[hppct] {%1*100/%2};
+    #var char[cpcur] %3;
+    #var char[cpmax] %4;
+    #math char[cppct] {%3*100/%4};
+    #var char[energy] %5;
+    #var companion[hp] %6;
+    #var enemy[hp] %7;
+
+    #nop Abilities;
+    #nop Heals;
+    #if {$char[hppct] < 70 || $companion[hp] < 50} {
+        #if {$ability[firstaid]} {
+            #if {$char[hppct] < 70} {firstaid};
+            #elseif {$companion[hp] < 50} {firstaid companion};
+        };
+    };
+    #nop Attacks;
+    #local i {};
+    #foreach {*ability[]} {/checkability $i}
+}
+
+#alias {/fkill} {
+    #var char[killauto] 1;
+    #if {"$companion[type]" != "sentinel"} {companion type sentinel};
+    /send fkill
+};
+#alias {/rkill} {
+    #var char[killroom] 1;
+    #if {"$companion[type]" != "grenadier"} {companion type grenadier};
+
+    /send kill all;
+    #var ability[reap] 1;
+    #var ability[grenade] 1;
+}
+
+#nop --- Bleeds
+#action {^You draw strength from [%d] bleeds on your opponent.} {
+    #var enemy[bleeds] %1   
+}
+
+#nop --- Attack
+/event.register combatStart shippai /combatStart;
+#alias {/combatStart} {
+    #nop %0;
+}
+
+#action {^HP: [%d/%d] CP: [%d/%d] ENERGY: [%d] COMP: [%d\%] ENEMY: %d\%} {
+    #var char[energy] %5;
+    #var companion[hp] %6;
+    #var enemy[hp] %7;
+
+    #foreach {*ability[]} {i} {
+        /checkability $i
+    };
+
+    stun;
+    devastate;
+    /status_draw;
+}
+
+#nop --- Got kill
+#action {You gain [ %d ] Guild Experience for your kill.$} {
+    #send {salvage corpse};
+
+    #var enemy[name] {None};
+    #var enemy[hp] 0;
+    #var enemy[bleeds] 0;
+    #var char[assist] 0;
+
+    #if {$char[killauto] == 1 || $char[killroom] == 1} {
+        #send {fkill};
+    };
+}
+
+#action {^You move around, salvaging whatever you can from the wreck.} {
+    #send {compact -q slag};
+
+    #if {$config[cubing]} {
+        #send {count salvage};
+    } {
+        #send {drop all salvage}
+    }
+}
+
+#action {That's not a corpse you can salvage!} {
+    #if {$ability[assess]} {/send assess} {/send sendoff};
+    #line gag;
+}
+
+#action {^There is nothing here you can kill.} {
+    /loot;
+
+    #var enemy[name] {None};
+    #var enemy[hp] 0;
+    #var char[killauto] 0;
+    #var char[killroom] 0;
+}
+
+#nop --- Bleeds
+#action {^You draw strength from [%d] bleeds on your opponent.} {
+    #var enemy[bleeds] %1   
+}
+
+#nop --- Abilities
+#nop Send or Set
+#alias {/setability} {
+    #if {"%2" != ""} {
+        #var ability[@lower{%1}] %2
+    } {
+        #var ability[@lower{%1}] 1
+    }
+}
+
+#alias {/checkability} {
+    #local a {@lower{%1}};
+    #if {$ability[$a] == 0} {#return};
+      
+    #switch {"$a"} {
+        #case {"thrust"} {/send thrust};
+        #case {"rend"} {#if {$enemy[bleeds] > 10} {/send rend}};
+        #case {"thrash"} {
+            #if {$enemy[bleeds] > 30 || $enemy[hp] < 25} {/send thrash}
+        };
+        #case {"bloodrage"} {
+            #if {$char[hppct] < 60 || $enemy[bleeds] > 80} {/send bloodrage}
+        };
+        #case {"reap"} {
+            #if {$char[killroom] && $enemy[hp]} {/send reap}
+        };
+        #case {"firstaid"} {
+            #if {$char[hppct] < 70} {/send firstaid};
+            #elseif {$companion[hp] < 50} {/send firstaid companion};
+        };
+        #case {"berserk"} {
+            #if {"$companion[type]" == "sentinel"} {/send berserk}
+        };
+        #case {"grenade"} {
+            #if {"$companion[type]" == "grenadier" && $char[killroom]} {/send grenade}
+        };
+    };
+}
+
+#action {^- \[ Speakers \] - Ability available : %w} {
+    #var ability[@lower{%1}] 1
+}
+
+#action {^You need to be in combat to use %w\.} {
+    #var ability[@lower{%1}] 1
+}
+
+#nop Diasable ability;
+
+#nop Generic;
+#action {^You are not ready to use %w yet.} {
+    #if {"%1" == "Assess"} {/send sendoff};
+    /setability @lower{%1} 0}
+
+#nop Thrust;
+#action {^You thrust your weapon into %w} {/setability thrust 0};
+#action {^Your thrust fails to damage your opponent.} {/setability thrust 0};
+
+#nop Rend;
+#action {^You attack viciously with your weapon, causing %w's wounds to open up and bleed.} {/setability rend 0};
+
+#nop Thrash;
+#action {^You put all of your power into attacking with your weapon, thrashing %w viciously.} {/setability thrash 0}
+#action {^Your thrash fails to damage your enemy.} {/setability thrash 0}
+
+#nop Reap;
+#action {^You extend your weapon and spin ferociously, unleashing carnage on the area!} {/setability reap 0}
+
+#nop Assess;
+#action {^You assess the corpse of the being you just killed.} {/setability assess 0}
+
+#nop Berserk
+#action {^Nyx goes berserk} {/setability berserk 0}
+#action {^Nyx whirls like a dervish, unleashing a battery of steel on her opponents.} {/setability berserk 0}
+
+#nop Grenade
+#action {^The grenade EXPLODES in a cloud of dust, fire and steel!} {/setability grenade 0}
+
+#nop Generig companion
+#action {^Your companion is not ready to use a %w yet.} {/setability @lower{%1} 0}
+
+#nop Firstaid;
+#action {^You look over %w's wounds, and apply the necessary first aid.} {/setability firstaid 0}
+#action {^You can't perform first aid yet.} {/setability firstaid 0}
+
+#alias {/ab} {
+    #local i {};
+    #foreach {*ability[]} {i} {/setability $i}
+}
+
+#action {HP:%d/%d CP:%d/%d B:%d\%} {
+    #var char[burden] %5;
+    #line gag;
+    #line oneshot #gag {^$};
+    /status_draw
+}
+
+#nop Companion;
+#action {^Nyx is overburdened} {
+    #delay {overburden} {
+        companion unload;
+        companion pickup all;
+    } {1}
+}
+
+#alias {/loot} {
+    #send {get all solaris};
+    #send {get all token};
+    #send {get all socket};
+    #send {store all sockets};
+    #send {get all egg};
+    #send {companion pickup all};
+}
+
+#action {^Your companion has picked up all available items.} {
+    #delay {companionUnload} {
+        companion get solaris;
+        companion unload
+    } {1}
+}
+
+
+#action {^Your companion Nyx picks up the Corpse of %w.} {
+    companion drop corpse;
+    salvage corpse;
+    #delay {accidentalCorpse} {/loot} {1}
+}
+
+
+#alias /toguild {
+    #local toguild {s;e;e;e;e;e;pad;enter ornithopter;takeoff};
+    #foreach $toguild {i} {#send $i}
+}
+
+#alias /levelup {
+    advance level;
+    advance str;
+    advance con;
+    advance qui;
+    advance dex
+}
+#class shippai close;

@@ -1,0 +1,298 @@
+#class char kill;
+#class char open;
+
+#var guild {
+    {ability} {
+        {enervate} {1}
+        {mindwipe} {1}
+        {confuse} {1}
+        {heartplunge} {1}
+        {gun} {1}
+    }
+    {darts} {
+        {max} {2000}
+        {amount} {0}
+        {mode} {Conservative}
+    }
+    {blood} {
+        {amount} {80000}
+        {keepAmount} {120000}
+        {inject} {0}
+        {autoject} {1}
+        {doping} {0}
+        {drain} {0}
+    }
+    {grafts} {
+        {amount} {10}
+        {active} {0}
+        {keepAmount} {20}
+    }
+    {gun} {
+        {jam} {0}
+        {ammo} {1}
+        {ammoTotal} {1}
+    }
+    {berserk} {1}
+    {biomass} {
+        {amount} {0}
+        {threshold} {5000}
+    }
+};
+
+#var enemy {
+    {name} {None}
+    {hp} {0}
+    {race} {}
+    {count} {0}
+    {weakness} {}
+};
+
+#nop EVENTS -------------------------------------------------------------------
+/event.register {GMCP.Char.Guild.Stats} {dynamo} {_updateGuildStats};
+#alias _updateGuildStats {
+    #nop %0;
+    #cat guild {%0};
+
+};
+/event.register {GMCP.Char.Guild.Stats} {checkDrugs} {_injectDrugs};
+#alias _injectDrugs {
+    #nop %0;
+    #if {"$enemy[name]" != "None"} {
+        #local stats $GMCP[Char][Guild][Stats];
+        #if {$stats[Adrenaline] == $stats[MaxAdrenaline]} {adrenaline @math{$stats[MaxAdrenaline]/3}};
+        #if {$stats[Endorphine] == $stats[MaxEndorphine]} {endorphine @math{$stats[MaxEndorphine]/2}};
+    };
+};
+
+/event.register {combatStart} {combat} {_combatStart};
+#alias {_combatStart} {
+    #nop %0;
+    #gag {^HP:};
+    #gag {^$};
+
+    /send evaluate @lower{$enemy[name]};
+    /send enervate;
+    /send pull trigger;
+    /send heartplunge;
+
+    #delay {combatConfuse} {/send confuse} {3}; #nop can't init at start;
+};
+
+/event.register {combatEnd} {combat} {_combat_end};
+#alias {_combat_end} {
+    #nop %0;
+    #ungag {^HP:};
+    #ungag {^$};
+    /gotkill;
+};
+
+#action {^%w leaves %w} {
+    #nop %0;
+    #if {"%1" == "$enemy[name]"} {
+        /send %2;
+    }
+};
+
+#action {^HP:%d/%d CP:%d/%d $:%d B:%d} {
+    #var char[burden] %6;
+}
+
+#nop Combat prompt
+#action {^HP: %d/%d  CP: %d/%d  ADRENALINE: %d ENDORPHINE: %d  BERSERK: %d %w: %d\%} {
+    #var enemy[name] {%8};
+    #var enemy[hp] %9;
+
+    #nop Do we need healing? Careful with grafts, they hurt when they fall off;
+    #if {$char[hppct] < 60 && $guild[grafts][amount] > 0} {graft};
+
+    #send {headbutt};
+};
+
+#action {^[Darts: %d][Ammo: %d [%d]][Blood: %d][Grafts: %d/%d]} {
+    #var guild[gun][ammo] {%2};
+    #var guild[gun][ammoTotal] {%3};
+    #var guild[grafts][active] {%6};
+};
+
+#action {^%w gasps in surprise as your attack deals critical damage.} {
+    #var enemy[name] %1;
+};
+
+#alias {/fkill} {
+    #var char[killauto] 1;
+    #send {fkill};
+}
+
+#alias {/rkill} {
+    #var char[killroom] 1;
+    #send {kill all};
+}
+
+#action {^You cannot process a mechanical corpse.} {
+    salvage corpse
+    compact -q slag;
+    count salvage
+};
+
+#alias {/gotkill} {
+    #nop %0;
+    #math enemy[count] {$enemy[count] - 1};
+
+    #nop Check if we have contaminated blood.;
+    #if {$guild[blood][drain]} {drain};
+
+    #nop Salvage or loot;
+    #if {"$enemy[race]" == "ixian"} {
+        salvage corpse;
+        compact -q slag;
+        count salvage;
+    } {
+        #nop Check status on bloodbank;
+        #if {$guild[blood][amount] < $guild[blood][keepAmount]} {draw};
+
+        #nop Make a clip or vampire the corpse;
+        #if {$char[hppct] > 90} {process corpse} {transfuse};
+    };
+
+    /send get all solaris;
+    /send get all token;
+    /send get all socket;
+    /send store all sockets;
+
+    #nop Are we 'kill all' or 'fkill';
+    #if {$char[killroom]} {
+        #nop No more mobs, loot the room;
+        #if {$enemy[count] <= 0} {
+            #delay 1 {/loot}
+        } {
+            #send {confuse};
+            #send {pull trigger};
+            #send {heartplunge};
+        }
+    };
+    #if {$char[killauto]} {
+        #nop Do we want to make more grafts?;
+        #if {$guild[grafts][amount] < 30} {prepare};
+
+        #nop Mob is done, attack next;
+        /fkill;
+    };
+
+    #var enemy[name] {None};
+    #var enemy[hp] {0};
+};
+
+#alias {/loot} {
+    #nop Reset stuff;
+    #var char[killroom] 0;
+    #var char[killauto] 0;
+    #var enemy[count] 0;
+
+    /send get all solaris;
+    /send get all token;
+    /send get all socket;
+    /send store all sockets;
+    /send drop all salvage;
+    /send packstuff all salvage;
+    #if {$config[autocompact]} {/send compact -q all in room};
+};
+
+
+#nop Drain contaminated blood;
+#action {^%d {more units|units} of blood are contaminated.} {
+    #showme {<119>BLOOD CONTAMINATED! CHECK SO IT DRAINS!<099>};
+    #if {"$enemy[name]" == "None"} {drain} {#var guild[blood][drain] 1};
+};
+#action {^You release a valve and blood drips to the floor.} {
+    #var guild[blood][drain] 0;
+}
+#action {^You prepare to drain 100%d80 contaminated blood units.} {
+    #var guild[blood][drain] 0;
+}
+
+#nop Max darts;
+#action {^Buying %d darts would bring your total number of darts above %d.} {
+    #var guild[darts][max] %2
+}
+
+#nop Inject;
+#action {^The refreshing effects of blood doping have worn off.} {#var guild[blood][doping] 0};
+#action {^You jab the needle into your arm and quickly flood your body with warm blood.} {#var guild[blood][doping] 1};
+#action {^The rich blood courses through your veins.} {#var guild[blood][doping] 1}
+
+#nop TODO: Do I need to do something here;
+#nop Septicimia;
+#nop Weakness spreads through your limbs. Septic infection sets in.;
+
+#nop Abilities ----------------------------------------------------------------
+#alias {/sendAbility} {
+    #if {"$enemy[name]" != "None"} {
+        #if {"%1" == "enervate" || "%1" == "confuse"} {
+            #if {$char[cppct] > 50} {
+                /send %1
+            } {
+                #var {$guild[ability][%1] 1}
+            }
+        };
+        #elseif {$char[cppct] > 25} {
+            /send %1
+        } {
+            #var {$guild[ability][%1] 1}
+        }
+    }
+}
+
+#nop Infect;
+#nop You manage to infect your weapon as host for a strain of the virus.;
+#nop The virus has worn off hazy dagger.;
+
+#nop Enervate;
+#action {^You are again able to pinch someone's shoulder nerve.} {
+    /sendAbility enervate;
+};
+#action {^You fail to enervate %w.} {#var guild[ability][enervate] 0};
+#action {^You may not enervate your opponent again yet.} {#var guild[ability][enervate] 0};
+#action {^You pinch %w's shoulder nerve firmly with one hand, immobilizing %w!} {#var guild[ability][enervate] 0};
+
+#nop Mindwipe
+#action {^You have regained the clarity to wipe your enemy's mind.} {
+    /sendAbility mindwipe;
+};
+#action {%* you perform a Mindwipe.$} {#var guild[ability][mindwipe] 0};
+#action {^You attempt a Mindwipe on %w, but fail.} {#var guild[ability][mindwipe] 0};
+#action {^You cannot muster the concentration to wipe someone's mind again so soon.} {#var guild[ability][mindwipe] 0}
+
+#nop Confuse
+#action {^You feel crafty enough to try to confuse your enemy again.} {
+    /sendAbility confuse;
+};
+#action {^You cannot confuse your opponent so early in battle!} {
+    
+}
+#action {^You move quickly, confusing the hell out of %w.} {#var guild[ability][confuse] 0};
+#action {^You fail to confuse your opponent.} {#var guild[ability][confuse] 0};
+#action {^You cannot confuse that fast!} {#var guild[ability][confuse] 0};
+
+#nop Heartplunge
+#action {^Your muscles are poised to plunge your weapon into your enemy's heart!} {
+    /sendAbility heartplunge;
+};
+#action {^Your blade leaves a GAPING CAVITY where %w's heart used to be!} {#var guild[ability][heartplunge] {0}};
+#action {^You fail to plunge your blade into %w's heart.} {#var guild[ability][heartplunge] 0};
+#action {^You scrape %w's chest, doing little.} {#var guild[ability][heartplunge] 0};
+#action {^You put your blade clear through %w!} {#var guild[ability][heartplunge] 0};
+
+#nop Dartgun
+#action {^You are now ready to fire your dartgun.$} {
+    /sendAbility gun;
+};
+#action {darts fly from your dartgun!$} {#var guild[ability][gun] 0};
+
+#nop Jammed;
+#action {^You hear a loud CLICK as your dartgun jams} {#var guild[gun][jam] 1};
+#action {^Your dartgun is jammed.$} {#var guild[gun][jam] 1};
+#action {^You successfully unjam your dartgun.} {#var guild[gun][jam] 0;};
+#action {^Your dartgun is not jammed.} {#var guild[gun][jam] 0};
+#action {^You're busy at the moment.$} {};
+
+#class char close;

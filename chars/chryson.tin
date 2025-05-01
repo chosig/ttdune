@@ -2,9 +2,10 @@
 #class chryson open;
 
 #nop Burned fuse?;
-#nop CPU Info - You rush coolant to your implants.
+#nop CPU Info - You rush coolant to your implants.;
+#nop CPU Info - A fuse blows saving an implant from damage!;
 
-#nop IMG SYSTEM MESSAGE: Sudo has achieved advanced machine level 79.
+#nop IMG SYSTEM MESSAGE: Sudo has achieved radvanced machine level 79.;
 
 #nop INIT VARIABLES -----------------------------------------------------------
 #var guild {
@@ -13,27 +14,36 @@
     {transfer} {1}
 }
 
+#var enemy {
+    {name} {None}
+    {hp} {0}
+    {race} {}
+    {count} {0}
+    {weakness} {}
+};
+
 #nop EVENTS -------------------------------------------------------------------
-/event.register GMCP.Char.Guild.Stats updateGuildStats _updateGuildStats;
+/event.register GMCP.Char.Guild.Stats chryson _updateGuildStats;
 #alias _updateGuildStats {
     #nop %0;
     #cat guild {%0};
+    #var guild[TrueLevel] {@math{$guild[AMLevel]*400 + $guild[GuildLevel]}};
 }
-
 /event.register combatStart chryson _combat_start;
 #alias {_combat_start} {
     #nop %0;
     #gag {^HP:};
     #gag {^$};
+    #delay {_combat_start} {
+        #send {auto fire, missile, pound, cut, shock @math{$guild[TrueLevel]*10}}
+    } {1};
 }
-
 /event.register combatEnd chryson _combat_end;
 #alias {_combat_end} {
     #nop %0;
     #ungag {^HP:};
     #ungag {^$};
 }
-
 /event.register GMCP.Char.Vitals chryson /heal;
 #alias {/heal} {
     #nop %0;
@@ -41,6 +51,13 @@
         /send transfer;
         #var guild[transfer] 0;
     };
+}
+#action {^%w leaves %w} {/pursue %1 %2};
+#alias /pursue {
+    #nop %0;
+    #if {"%1" == "$enemy[name]"} {
+        /send %2;
+    }
 }
 
 #nop ACTIONS ------------------------------------------------------------------
@@ -56,15 +73,8 @@
     #nop Does this damage too? Fire it when we can.;
     #if {$guild[atombeam] && $char[hppct] < 95} {#send {atombeam}};
 
-    #nop Guild attacks;
-    #send {shock @math{$guild[GuildLevel]*10}};
-    #send {fire};
-    #send {missile $GMCP[Char][Status][aim]};
-    #send {pound};
-    #send {cut};
     #if {$char[cppct] > 25} {#send {devastate}};
     #send {headbutt};
-
     /status_draw;
 }
 
@@ -93,7 +103,7 @@
 
         #case {"%1 implant %2."} {/setimplant %0};
 
-        #case {"Autonomous Combat Protocols now set to: missile,fire,pound,cut,shock %d."} {#line gag};
+        #case {"Autonomous Combat Protocols now set to: fire,missile,pound,cut,shock %d."} {#line gag};
         #case {"Executing enhanced reflex fast-attack routine."} {#line gag};
         #case {"Emitter is active."} {#line gag};
         #case {"Unable to fire.  Ultra-shotgun is reloading."} {#line gag};
@@ -106,6 +116,8 @@
 } {8}
 
 #action {^There is nothing here you can kill.} {
+    #var char[killauto] 0;
+    #var char[killroom] 0;
     /loot;
 }
 
@@ -148,7 +160,10 @@
 
     #if {"$enemy[race]" == "ixian"} {/salvage} {absorb};    
     #math enemy[count] {$enemy[count] - 1};
-    #if {$enemy[count] <= 0} {#var enemy[count] 0};
+    #if {$enemy[count] <= 0} {#
+        #var enemy[count] 0;
+        #var char[killroom] 0;
+    };
     #delay {lootDelay} {/loot} {1};
 
     #var enemy[name] {None};
@@ -196,24 +211,9 @@
 }
 
 #alias {/levelup} {
-    #local cmd {advance level;advance str;advance con;advance dex;advance qui;advance wis;advance int};
+    #local cmd {radvance level;radvance str;radvance con;radvance dex;radvance qui;radvance wis;radvance int};
     #local i {};
     #foreach {$cmd} {i} {#send {$i}};
-}
-
-#alias {/panel %w} {
-    #switch {"%1"} {
-        #case {"on"} {
-            deactivate auto;
-            activate solar;
-        };
-        #case {"off"} {
-            deactivate solar;
-            activate auto;
-          
-        };
-        #default {#showme {Usage: /panel on/off - inactivate auto and solar}}
-    }
 }
 
 #nop GAGS ---------------------------------------------------------------------

@@ -1,0 +1,227 @@
+#nop Guild specific macros;
+#class {keybindings} {assign} {
+    #macro {\eq} {/fkill};
+    #macro {\ew} {/rkill};
+};
+
+#class pyreet kill;
+#class pyreet open;
+
+#var char {
+    {hpcur} {100}
+    {hpmax} {100}
+    {hppcpt} {100}
+    {cpcur} {100}
+    {cpmax} {100}
+    {cppct} {100}
+}
+
+#var guild {
+    {ability} {
+        {dragonstrike} {1}
+        {wrap} {1}
+        {shock} {1}
+        {entice} {1}
+        {imbibe} {1}
+    }
+    {ingredients} {
+        {sapho} {0}
+        {elacca} {0}
+        {verite} {0}
+        {semuta} {0}
+        {fogwood} {0}
+        {pleniscentia} {0}
+    }
+}
+
+#var enemy {
+    {name} {None}
+    {hp} {0}
+    {race} {}
+    {count} {0}
+}
+
+#alias {/fkill} {
+    #var char[killauto] 1;
+    /send fkill
+}
+
+#alias {/rkill} {
+    #var char[killroom] 1;
+    /send enrage all;
+    #nop #if {$guild[ability][entice]} {/send entice all};
+}
+
+#alias {soak} {
+    #local from 1;
+    #local to 1;
+    #local ing {elacca};
+    #if {%3} {
+        #var from %1;
+        #var to %2;
+        #var ing %3
+    };
+    #elseif {%2} {
+        #var from %1;
+        #var to %2
+    };
+    #else {
+        #var to %1
+    };
+
+    #loop $from $to {i} {
+        #send {soak $i in $ing}
+    };
+    #unvar i;
+}
+
+/event.register GMCP.Char.Vitals pyreet _checkHealth;
+#alias {_checkHealth} {
+    #nop %0;
+    #if {$char[hppct] < 60 && $guild[ability][wrap]} {
+        #var guild[ability][wrap] 0;
+        /send wrap
+    };
+};
+#action {^HP:%d/%d CP:%d/%d B:%d\%} {
+    #var char[burden] %5;
+    #if {"$enemy[name]" != "None"} {#line gag};
+    /status_draw;
+}
+
+/event.register combatStart pyreet _combatStart;
+#alias {_combatStart} {
+    #nop %0;
+    #var enemy[count] {@math{$enemy[count] +1}};
+    #if {$guild[ability][dragonstrike]} {
+        #delay {combatStart} {/send dragonstrike} {1}
+    }
+}
+
+#action {%w loses %w temper and charges you!} {
+    #var enemy[count] {@math{$enemy[count] +1}};
+
+    #delay {combatStart} {
+        #if {$guild[ability][dragonstrike]} {#send {dragonstrike}};
+        #send {evaluate @lower{%1}};
+    } {1};
+}
+
+#action {^You drop out of your intense state.} {
+    #send {nervature int}
+}
+
+/event.register combatEnd pyreet _combatEnd;
+#alias {_combatEnd} {
+    #nop %0;
+    #send {salvage corpse};
+    #send {analyze corpse};
+
+    #if {"$enemy[race]" == "Ixian"} {
+        #send {compact -q slag};
+        #send {count salvage}
+    };
+
+    #if {"$char[killroom]" == "1" || "$char[killauto]" == "1"} {#send {fkill}}
+}
+
+#action {^There is nothing here you can kill.} {
+    /loot;
+    #var char[killauto] 0;
+}
+
+#alias {/loot} {
+    get all egg;
+    get all solaris;
+    get all socket;
+    get all token;
+    store all sockets;
+    compact -q all in room
+}
+
+#action {^HP: \[%d\%\] CP: \[%d\%\] FORM: < %w > WRAPS: \[%d\] %w: %d\%} {
+    #if {"$enemy[name]" != %5} {/send evaluate @lower{%5}};
+    #var enemy[name] %5;
+    #var enemy[hp] %6;
+
+    #local int {@math{$GMCP[Char][Guild][Stats][Intensity] * 100 / 600}};
+    #local nerv {$GMCP[Char][Guild][Stats][Nervature]};
+    #if {$int < 70} {
+            #if {"$nerv" != "int"} {/send nervature int};
+    } {
+        #if {"$nerv" != "none"} {/send nervature none};
+    };
+
+    #if {$guild[ability][imbibe] && $guild[ingredients][pleniscentia]} {/send imbibe pleniscentia};
+
+    #send {headbutt};
+    #if {$char[cppct] > 50} {#send {shoulder}};
+    /status_draw
+}
+
+#nop --- Abilities;
+#action {^- \{ HM \} - You are now able to use Dragon Strike again.} {
+    #if {"$enemy[name]" != "None"} {
+        /send dragonstrike
+    } {
+        #var guild[ability][dragonstrike] 1
+    }
+};
+#action {^You slam your fist powerfully into %w, drawing strength from %w suffering!} {
+    #var guild[ability][dragonstrike] 0;
+}
+#action {^You try to perform a Dragon Strike, but fail.} {
+    #var guild[ability][dragonstrike] 0
+};
+
+#action {^- \{ HM \} - You are now able to use enticement to invoke jealousy in males again.} {
+    #var guild[ability][entice] 1;
+}
+#action {^You use your seductive training, eyeing every man in the room, suggestively.} {
+    #var guild[ability][entice] 0
+}
+#action {^You can't entice again so soon.} {
+    #var guild[ability][entice] 0;
+}
+
+#action {^You wrap your wounds with a %w wrapping, and feel much better.} {
+    #var guild[ability][wrap] 0;
+}
+#action {^- \{ HM \} - You remove your wrappings and the healing effects wear off.} {
+    #if {$char[hppct] < 60} {/send wrap} {
+        #var guild[ability][wrap] 1;
+    }
+}
+#action {^That is not a valid target for Dragon Strike.} {
+    #var guild[ability][dragonstrike] 1
+}
+
+#action {^- \{ HM \} - You feel the effects of the ingredients inside you subside.} {
+    #if {$guild[ingredients][pleniscentia]} {
+        #if {$enemy[hp] > 0} {/send imbibe pleniscentia};
+        #elseif {$GMCP[Char][Guild][Stats][StressPercent] > 50}  {
+            /send imbibe pleniscentia
+        };
+        #else {#var guild[ability][imbibe] 1};
+    }
+}
+#action {^You imbibe some %w and begin to instantly feel the effects.} {
+    #var guild[ingredients][$ing] {@dec{$guild[ingredients][$ing]}};
+    #var guild[ability][imbibe] 0
+}
+#action {^You cannot imbibe again yet.} {
+    #var guild[ability][imbibe] 0
+}
+
+#action {^     Sapho%!s:%!s%d$$} {#var guild[ingredients][sapho] %1;};
+#action {^     Elacca%!s:%!s%d$} {#var guild[ingredients][elacca] %1};
+#action {^     Verite%!s:%!s%d$} {#var guild[ingredients][verite] %1};
+#action {^     Semuta%!s:%!s%d$} {#var guild[ingredients][semuta] %1};
+#action {^     Fogwood%!s:%!s%d$} {#var guild[ingredients][fogwood] %1};
+#action {^     Pleniscentia%!s:%!s%d$} {#var guild[ingredients][pleniscentia] %1};
+
+#nop Gag unwanted skills
+#action {^     {adaptation|aversion|enslave|feign|flurry|katahzirui|khonasana|relaxed|seduction|vengence}} {
+    #line gag
+}
+#class pyreet close;

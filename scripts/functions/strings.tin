@@ -17,5 +17,10 @@
     };
 };
 
+#function {lower} {
+    #local str {};
+    #format str {%l} {%1};
+    #return $str;
+}
 
 #class functions/strings close;

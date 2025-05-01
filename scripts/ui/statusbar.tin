@@ -32,34 +32,52 @@
     #return {$ret};
 }
 
-#function {gxp} {
-    #local gxcur {$GMCP[Char][Guild][Stats][GuildExp]};
-    #local gxmax {$GMCP[Char][Guild][Stats][NextGuildLevelCost]};
-    #local gxleft {@math{$gxmax - $gxcur}};
-    #local gxpct {@math{$gxcur * 100 / $gxmax}};
+#function {gxp_gesserit} {
+    #local guild {$GMCP[Char][Guild][Stats]};
+
+    #local gexp {$guild[GuildExp]};
+
+    #local glvl {$guild[GuildLevel]};
+    #local cguild {$guild[NextGuildLevelCost]};
+    #local lguild {@math{$cguild-$gexp}};
+
+    #local bindu {$guild[Bindu]};
+    #local cbindu {$guild[NextBinduLevelCost]};
+    #local lbindu {@math{$cbindu-$gexp}};
+
+    #local prana {$guild[Prana]};
+    #local cprana {$guild[NextPranaLevelCost]};
+    #local lprana {@math{$cprana-$gexp}};
+
+    #local manip {$guild[Manipulation]};
+    #local cmanip {$guild[NextManipulationLevelCost]};
+    #local lmanip {@math{$cmanip-$gexp}};
 
     #local ret {};
-    #format ret {%s %s}
-        {[<acf>G<ccc>$GMCP[Char][Guild][Stats][GuildLevel]<099>}
-        {<fca>@n2h{$gxleft}<099>]};
+    #format ret {%s%s<099>|%s<099>|%s<099>|%s%s}
+        {<099>[}
+        {<acf>G<ccc>$glvl <fca>@n2h{$lguild}}
+        {<acf>P<ccc>$prana <fca>@n2h{$lprana}}
+        {<acf>B<ccc>$bindu <fca>@n2h{$lbindu}}
+        {<acf>M<ccc>$manip <fca>@n2h{$lmanip}}
+        {<099>]};
     #return {$ret};
+}
+
+#function {gxp_matres} {
+    #local gxp {$GMCP[Char][Guild][Stats][Gexp]};
+    #return {[<acf>G<099>:@n2h{$gxp}]};
 }
 
 #function {xp} {
     #local ret {};
-    #format ret {%s%s%s} {[X:} {@n2h{$GMCP[Char][Status][xp]}} {]};
+    #format ret {%s} {[X:@n2h{$GMCP[Char][Status][xp]}]};
     #return {$ret};
 }
 
 #function {mat} {
     #local ret {};
     #format ret {%s%+3s%s} {[<ffa>M<099>:} {$GMCP[Char][Guild][Stats][Material]} {%]};
-    #return {$ret};
-}
-
-#function {pwr} {
-    #local ret {};
-    #format ret {%s%s%s} {[<aff>P<099>:} {@n2h{$GMCP[Char][Guild][Stats][Power]}} {]};
     #return {$ret};
 }
 
@@ -72,11 +90,38 @@
     #return {$ret}
 }
 
+#function {pwr} {
+    #local ret {};
+    #format ret {%s%s%s} {[<aff>P<099>:} {@n2h{$GMCP[Char][Guild][Stats][Power]}} {]};
+    #return {$ret};
+}
+
 #function {fuses} {
     #local ret {};
     #format ret {%s%s%s} {[<fca>F<099>:} {$guild[Fuses]} {]};
     #return {$ret};
 }
+
+#function {blood} {
+    #local ret {};
+    #format ret {%s%s%s} {[<fbb>B<099>:} {@n2h{$GMCP[Char][Guild][Stats][Blood]}} {]};
+    #return {$ret};
+}
+
+#function {adr} {
+    #local ret {};
+    #math ret {$GMCP[Char][Guild][Stats][Adrenaline] * 100 / $GMCP[Char][Guild][Stats][MaxAdrenaline]};
+    #format ret {%s%+3s%s} {[A:} {$ret} {]};
+    #return {$ret};
+}
+
+#function {end} {
+    #local ret {};
+    #math ret {$GMCP[Char][Guild][Stats][Endorphine]* 100 / $GMCP[Char][Guild][Stats][MaxEndorphine]};
+    #format ret {%s%+3s%s} {[E:} {$ret} {]};
+    #return {$ret};
+};
+
 #alias {/status_clear} {
     #nop %0;
     #local width {};
@@ -88,7 +133,7 @@
 
 #alias {/status_draw} {
     #nop %0;
-    #var status_line {@hp{} @cp{} @enemy{}@mat{}@pwr{}@fuses{}@burden{}@gxp{}@xp{}@money{}};
+    #var status_line {@hp{} @cp{} @enemy{}@burden{}@gxp_matres{}@xp{}@money{}};
 
     #local len {0};
     #format len {%L} {$line};

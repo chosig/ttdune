@@ -1,0 +1,253 @@
+#nop Guild specific macros;
+#class {keybindings} {assign} {
+    #macro {\eq} {/fkill};
+    #macro {\ew} {/rkill};
+}
+
+#class {aengel} {kill};
+#class {aengel} {open};
+
+#var char {
+    {hpcur} {0}
+    {hpmax} {0}
+    {hppcpt} {0}
+    {cpcur} {0}
+    {cpmax} {0}
+    {cppct} {0}
+
+}
+#var guild[ability] {
+    {blitz} {1}
+    {blind} {1}
+    {agony} {1}
+    {exhaust} {1}
+    {palmstrike} {1}
+    {legsweep} {1}
+    {bandage} {1}
+    {alleviate} {1}
+};
+
+#alias {/fkill} {
+    #var char[killauto] 1;
+    #send {fkill};
+};
+
+#alias {/rkill} {
+    #var char[killroom] 1;
+    #var enemy[count] 0;
+    #send {kill all}
+}
+
+/event.register {GMCP.Char.Guild.Stats} {aengel} {_update_guild};
+#alias {_update_guild} {
+    #nop %0;
+    #local guild {$GMCP[Char][Guild][Stats]};
+    #if {"$guild[Weirding]" != "Active"} {/send weirding};
+    #var char[end] {$guild[Endurance]};
+    #var char[res] {$guild[Resilience]};
+    #var char[con] {$guild[Consciousness]};
+    #var char[spi] {$guild[Spice]};
+    #var char[tol] {$guild[SpiceTolerance]};
+    #var char[for] {$guild[FortitudeCharges]};
+}
+
+
+#alias {/levelup} {
+    advance level;
+    advance qui;
+    advance wis;
+    advance dex;
+    advance con;
+    advance str;
+    advance int;
+    cost;
+}
+
+#nop Send skills active or not;
+#alias {/ss} {
+    #foreach {*guild[ability][]} {i} {
+        #if {"$i" != "{bandage|alleviate}"} {/send $i}
+    }
+}
+
+#action {^HP:%d/%d CP:%d/%d B:%d%%} {#var char[burden] %5}
+
+#action {HP: %d/%d  CP: %d/%d - E:%d\% R:%d\% C:%d\% S: %d\% - Fort : \[%*\] %* ENEMY: %d\%} {
+    #nop Vitals is captured by GMCP;
+    #var {enemy[hp]} {%11};
+    /status_draw;
+
+    #if {$char[hppct] < 90 && $guild[ability][bandage]} {/send bandage};
+    #if {$char[hppct] < 70 && $guild[ability][alleviate]} {/send alleviate};
+
+};
+
+#nop Attacking ----------------------------------------------------------------
+/event.register combatStart aengel _combatStart;
+#alias {_combatStart} {
+    #nop %0;
+    #delay {combatStart} {
+        #foreach {*guild[ability][]} {i} {
+            #if {"$i" != "{bandage|alleviate}"} {/send $i}}
+    } {1};
+    #unvar i;
+}
+
+#nop Wimpy --------------------------------------------------------------------
+#action {^You ran %w.} {
+    #var enemy[name] {None}
+}
+
+#nop Abilities ENABLE ---------------------------------------------------------
+#alias {_sendorset %1} {
+    #if {"$enemy[name]" != "None"} {
+        /send %1
+    } {
+        #var guild[ability][%1] 1;
+    }
+};
+
+#nop Blind;
+#action {^You are ready to blind again.} {
+    _sendorset blind
+}
+#nop Blitz
+#action {^You are able to use blitz again.} {
+    _sendorset blitz
+};
+
+#nop Exhaust;
+#action {^You are able to use exhaust again.} {
+    _sendorset exhaust
+};
+
+#nop Agony;
+#action {^You are able to cause agony again.} {
+    _sendorset agony
+};
+
+#nop Palmstrike;
+#action {^You are able to perform a palmstrike technique again.} {
+    _sendorset palmstrike
+};
+
+#nop Legsweep;
+#action {^You are ready to perform another legsweep.} {
+    _sendorset legsweep
+};
+
+#nop Bandage;
+#action {^You are able to bandage your wounds again.} {
+    #if {$char[hppct] < 90} {bandage} {#var guild[ability][bandage] 1}
+}
+
+#nop Alleviate;
+#action {^You are ready to alleviate wounds again.} {
+    #if {$char[hppct] < 70} {alleviate} {#var guild[ability][alleviate] 1}
+}
+
+#nop Abilities DISABLE --------------------------------------------------------
+#nop Blind;
+#action {^You try to blind %w but fail.} {
+    #var guild[ability][blind] 0;
+};
+#action {^You blind %w} {#var guild[ability][blind] 0};
+
+#nop Blitz;
+#action {^You begin attacking your enemies aggressively and forcefully.} {
+    #var guild[ability][blitz] 0
+};
+#action {^You try to go into a blitz but fail.} {
+    #var guild[ability][blitz] 0
+};
+
+#nop Agony;
+#action {^You grab %1's arm and strike %w nerves explosively, causing incredible,  unbearable pain.} {
+    #var guild[ability][agony] 0
+};
+#action {^You aren't ready to cause agony yet.} {
+    #var guild[ability][agony] 0
+};
+
+#nop Exhaust;
+#action {^You begin trying to exhaust your enemies.} {
+    #var guild[ability][exhaust] 0
+};
+#action {^You cannot use exhaust again so soon.} {
+    #var guild[ability][exhaust] 0
+}
+#nop Palmstrike;
+#action {^You smash %1 powerfully with your palm} {
+    #var guild[ability][palmstrike] 0
+};
+#action {^You cannot perform a palmstrike technique yet.} {
+    #var guild[ability][palmstrike] 0
+};
+
+#nop Legsweep;
+#action {^You move in close to %1} {
+    #var guild[ability][legsweep] 0
+};
+
+#nop Bandage;
+#action {^You apply bandages to your wounds, and you feel a little better.} {
+    #var guild[ability][bandage] 0
+};
+
+#nop Alleviate;
+#action {^You concentrate deeply, and use Bene Gesserit healing techniques to alleviate your wounds.} {
+    #var guild[ability][alleviate] 0
+};
+#action {^You are not ready to alleviate wounds yet.} {
+    #var guild[ability][alleviate] 0
+};
+
+#nop Looting ------------------------------------------------------------------
+#action {^You killed %w} {
+    /send packstuff all egg;
+    #var enemy[name] {None};
+    #var enemy[hp] 0;
+    #if {"$enemy[race]" == "Ixian"} {
+        /send salvage corpse;
+        #send {compact -q slag};
+        #send {count salvage};
+    } {
+        /send pray
+    };
+    #if {$char[killroom]} {
+        #var enemy[count] {@math{$enemy[count] -1}};
+        #if {$enemy[count] < 1} {
+            #showme {<cfa>Killed all in room};
+            /loot;
+            #var enemy[count] 0;
+            #var char[killroom] 0;
+        };
+    };
+    #if {$char[killauto]} {/send fkill};
+};
+
+#nop Can not pray over corpse, it's a robot, salvage it
+#action {^A mechanical being doesn't hold a soul.} {
+    /send salvage corpse;
+    #send {compact -q slag};
+    #send {count salvage};
+    #nop #if {$char[killauto]} {fkill}
+};
+
+#action {^There is nothing here you can kill.} {
+    #var enemy[count] 0;
+    #var char[killauto] 0;
+    #var char[killroom] 0;
+    /loot
+};
+
+#alias {/loot} {
+    #send {get all solaris};
+    #send {get all token};
+    #send {get all socket};
+    #send {store all sockets};
+    #send {count salvage};
+    #send {compact -q all in room};
+}
+
+#class {aengel} {close}

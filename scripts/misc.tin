@@ -4,13 +4,13 @@
 #nop Space;
 #action {Your %!w ship has arrived. Please enter your ship.} {enter ship};
 
-
-#nop Hunt;
-#action {^%w leaves %w.} {
-    #local who {%1};
-    #format who {%l} {$who};
-    #if {"$who" == $enemy[name]} {
-        #send {%2}
-    }
+#nop Password to Terro's
+#action {^You find a small note in the drawer with the word %w written on it.} {
+    #var terro {%1}
 }
+#alias terro {
+    #parse {$terro} {i} {type $i};
+    submit
+}
+
 #class misc close;

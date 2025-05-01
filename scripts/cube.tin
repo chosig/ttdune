@@ -14,6 +14,22 @@
     }
 }
 
+#nop Upgrade sockets;
+#nop /socket <type> <level> [<amount]
+#alias {/socket} {
+    #local type %1;
+    #local level %2;
+    #local amount 3;
+    #if {%3} {#var amount %3};
+
+    #send {store all sockets};
+    #loop 1 $amount i {/send retrieve level $level $type from socketpack};
+    /send put all socket in cube;
+    /send close cube;
+    /send activate cube;
+    #unvar i;
+};
+
 #nop Carried salvage/shards
 #nop You are carrying 3 shards.
 #action {%!{^You are carrying (\d+) (salvage|shard)s?(?:\.|, of which (\d+) are in containers\.)$}} {
@@ -73,6 +89,9 @@
     #nop If cube is active do nothing;
     #if {$cube[active] == 1} {#return};
 
+    #nop Set cube to active to not launch twice;
+    #var cube[active] 1;
+
     #if {"%2" == ""} {#send {count %1}};
 
     #nop Set type so we know what to do when it's finished;
@@ -95,7 +114,7 @@
 
         #nop Shard we only run 4 at a time, better with quantity of sockets than a high level;
         #nop socket that we do not want;
-        #if {"%1" == "shard"} {#var times 4};
+        #nop #if {"%1" == "shard"} {#var times 4};
 
         #loop 1 $times _ {
             #send {put %1 in cube}

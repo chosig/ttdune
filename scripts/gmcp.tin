@@ -50,8 +50,6 @@
 
 #event {IAC SB GMCP Char.Vitals IAC SE} {
     #cat {GMCP[Char][Vitals]} {%1};
-    /event.raise {GMCP.Char.Vitals} {%1};
-
     #local s {%1};
     #regex {$s[string]} {H:{\d+}\\/{\d+} M:{\d+}\\/{\d+}} {
         #var {char[hpcur]} {&1};
@@ -61,6 +59,8 @@
     };
     #math char[hppct] {$char[hpcur] * 100 / $char[hpmax]};
     #math char[cppct] {$char[cpcur] * 100 / $char[cpmax]};
+
+    /event.raise {GMCP.Char.Vitals} {%1};
 }
 
 #event {IAC SB GMCP Char.Stats IAC SE} {

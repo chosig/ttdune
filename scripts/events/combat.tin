@@ -1,21 +1,48 @@
-#class {event/scombat} kill;
+#class {event/combat} kill;
 #class {events/combat} open;
 
-#action {^You attack %w} {
-    #format enemy[name] {%l} {%1};
-    #if {"$enemy[count]" == ""} {#var enemy[count] 1} {#math enemy[count] {$enemy[count] +1}};
+#action {^You attack %w%!{\.?}$} {
+    #var enemy[name] %1;
+    #if {"$enemy[count]" == ""} {
+        #var enemy[count] 1
+    } {
+        #var enemy[count] {@math{$enemy[count] + 1}};
+    };
+    #if {!$char[killroom]} {
+        #delay {combatEvaluate} {/send evaluate @lower{%1}} {1};
+    };
     /event.raise combatStart {$enemy[name]};
-    evaluate $enemy[name];
 }
 
 #action {^You are fighting %w} {
-    #format enemy[name] {%l} {%1};
+    #if {"%1" != "$enemy[name]"} {
+        #delay {1} {#send {evaluate @lower{%1}}};
+        #var enemy[name] %1;
+        /event.raise combatStart {%1};
+    }
 }
 
 #action {^You turn to attack %w} {
-    #format {enemy[name]} {%l} {%1};
-    evaluate $enemy[name];
-    /event.raise combatStart {$enemy[name]};
+    #var enemy[name] %1;
+    #if {!$char[killroom]} {
+        #delay {1} {/send evaluate @lower{%1}};
+    };
+    /event.raise combatStart {%1};
+}
+
+#action {^You gain %1 for your kill.} {
+    /event.raise combatEnd $enemy[race];
+    #var enemy {
+        {name} {None}
+        {hp} {0}
+        {race} {}
+        {weakness} {}
+    };
+}
+
+#nop Hunt;
+#action {^%w leaves %w} {
+    /event.raise _left_room %1 %2;
 }
 
 #var {bodyparts} {
@@ -35,18 +62,14 @@
 
 #nop Worker Drone appears to have weak armour on its right hand.;
 #action {^%!* appears to have weak armour on %!w %*.} {
-    #line gag;
     #var enemy[weakness] {$bodyparts[%1]};
-    #delay {aim} {aim $bodyparts[%1]} {0.5};
+    /send aim $bodyparts[%1];
 }
 
 #nop 150 levels of evaluate opponent seems to be needed to see race
 #action {^%!w belongs to the %w race.} {
-    #format enemy[race] {%l} {%1};
-    #line gag;
+    #var enemy[race] %1;
     /event.raise combat_enemy_race {$enemy[race]};
 }
-
-
 
 #class {events/combat} close;

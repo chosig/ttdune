@@ -27,9 +27,10 @@
 #read $scripts/session.tin;
 
 #nop Until I get a character selector...;
-#read $dune[dir]/chars/chryson.tin;
+#read $dune[dir]/chars/shippai.tin;
 
 #config {repeat enter} on;
+#config {color patch} on;
 
 #ssl dune dunemud.net 6788;
 
