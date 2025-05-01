@@ -1,10 +1,15 @@
 #class chryson kill;
 #class chryson open;
 
+#nop Burned fuse?;
+#nop CPU Info - You rush coolant to your implants.
+
+#nop IMG SYSTEM MESSAGE: Sudo has achieved advanced machine level 79.
+
 #nop INIT VARIABLES -----------------------------------------------------------
 #var guild {
     {atombeam} {1}
-    {matlimit} {75}
+    {matlimit} {50}
     {transfer} {1}
 }
 
@@ -49,7 +54,7 @@
     #var enemy[hp] {%6};
 
     #nop Does this damage too? Fire it when we can.;
-    #if {$guild[atombeam] && $char[hppct] < 100} {#send {atombeam}};
+    #if {$guild[atombeam] && $char[hppct] < 95} {#send {atombeam}};
 
     #nop Guild attacks;
     #send {shock @math{$guild[GuildLevel]*10}};
@@ -67,15 +72,35 @@
     #switch {"%1"} {
         #case {"You are awarded [ %d ] GEXP for your kill."} {/got_kill};
 
-        #case {"Atomic scanners reset."} {#var guild[atombeam] 1};
-        #case {"Atomic extractor recharging."} {#var guild[atombeam] 0};
+        #case {"Atomic scanners reset."} {
+            #var guild[atombeam] 1;
+            #line gag;
+        };
+        #case {"Atomic extractor recharging."} {
+            #var guild[atombeam] 0;
+            #line gag;
+        };
 
-        #case {"Transfer power back online."} {#var guild[transfer] 1};
-        #case {"Transference banks are still recharging."} {#var guild[transfer] 0};
+        #case {"Transfer power back online."} {
+            #var guild[transfer] 1;
+            #line gag
+        };
+        #case {"Transference banks are still recharging."} {
+            #var guild[transfer] 0;
+            #line gag;
+        };
+        #case {"Complete power transfer successful."} {#line gag};
+
+        #case {"%1 implant %2."} {/setimplant %0};
 
         #case {"Autonomous Combat Protocols now set to: missile,fire,pound,cut,shock %d."} {#line gag};
         #case {"Executing enhanced reflex fast-attack routine."} {#line gag};
-        #case {"%1 implant %2."} {/setimplant %0};
+        #case {"Emitter is active."} {#line gag};
+        #case {"Unable to fire.  Ultra-shotgun is reloading."} {#line gag};
+        #case {"Launch bay is currently reloading."} {#line gag};
+        #case {"Arm servos already activated."} {#line gag};
+        #case {"Cutters already in use."} {#line gag};
+
         #nop #default {#line gag};
     }
 } {8}
@@ -88,7 +113,6 @@
 #action {^%w shudders slightly as you drain %w energy into your exoskeleton.} {
     #var guild[atombeam] 0;
 }
-
 
 #nop ALIASES ------------------------------------------------------------------
 #alias {/setimplant} {
@@ -120,18 +144,12 @@
     #showme {GUILD: $implant is set to "$status"};
 }
 #alias {/got_kill} {
-    /event.raise combatEnd;
+    #if {$char[killauto] == 1} {/send fkill};
+
+    #if {"$enemy[race]" == "ixian"} {/salvage} {absorb};    
     #math enemy[count] {$enemy[count] - 1};
-
-    #if {"$enemy[race]" == "ixian"} {/salvage} {absorb};
-
-    #if {$enemy[count] <= 0} {
-        #if {$char[killauto]} {/send fkill};
-
-        #if {$char[killroom]} {
-            /loot
-        }
-    };
+    #if {$enemy[count] <= 0} {#var enemy[count] 0};
+    #delay {lootDelay} {/loot} {1};
 
     #var enemy[name] {None};
     #var enemy[hp] {0};
@@ -150,11 +168,7 @@
     kill all;
 }
 
-#alias {/loot} {
-    #var char[killauto] 0;
-    #var char[killroom] 0;
-    #var enemy[count] 0;
-    
+#alias {/loot} {    
     #send {get all};
     #send {store all sockets};
     #if {$GMCP[Char][Guild][Stats][Material] < $guild[matlimit]} {
@@ -168,18 +182,16 @@
 #alias {/salvage} {
     #send {salvage corpse};
     #send {convert slag};
+    #send {drop all salvage};
+    #send {get all socket};
     #if {$guild[Material] < 90} {
-        #send {drop all salvage};
-        #send {get all socket};
         #send {convert all};
         #send {packstuff all salvage};
-    };
-    #elseif {$cube[active] == 0} {
-        #send {count salvage};
-    };
-    #else {
-        #send {drop all salvage};
+    } {
         #send {packstuff all salvage};
+    };
+    #if {$cube[active] == 0} {
+        #send {count salvage}
     };
 }
 

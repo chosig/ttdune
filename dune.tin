@@ -8,13 +8,13 @@
 #nop convert numbered CONFIGS list to key-value pairs;
 #nop see https://github.com/scandum/tintin/issues/171;
 #if {&{info[CONFIGS][1]}} {
-    #foreach {*info[CONFIGS][]} num {
-        #local config $info[CONFIGS][$num];
-        #local key {$config[arg1]};
-        #local val {$config[arg2]};
-        #var info[CONFIGS][$key] {$val};
-    };
-    #unvar info[CONFIGS][%+1..d];
+  #foreach {*info[CONFIGS][]} num {
+    #local config $info[CONFIGS][$num];
+    #local key {$config[arg1]};
+    #local val {$config[arg2]};
+    #var info[CONFIGS][$key] {$val};
+  };
+  #unvar info[CONFIGS][%+1..d];
 };
 
 #nop initial split

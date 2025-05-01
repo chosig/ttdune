@@ -1,1 +1,7 @@
 #nop IMG SYSTEM MESSAGE: Sudo has achieved advanced machine level 78.;
+
+#class ui/comm kill;
+#class ui/comm open;
+
+
+#class ui/comm close;

@@ -33,7 +33,7 @@
 #macro {\eOm} {/send d};      #nop -;
 
 #alias /send {
-    #showme {<cca>%0};
+    #showme {<cca>> %0};
     %0
 }
 

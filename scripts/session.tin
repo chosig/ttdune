@@ -11,10 +11,8 @@
 #read $scripts/cube.tin;
 #read $scripts/gag.tin;
 #read $scripts/macro.tin;
+#read $scripts/misc.tin;
 
 #read $scripts/ui/init.tin;
-#nop Space;
-#action {Your %!w ship has arrived. Please enter your ship.} {enter ship};
 
 #class session close;
-

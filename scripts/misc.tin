@@ -1,0 +1,16 @@
+#class misc kill;
+#class misc open;
+
+#nop Space;
+#action {Your %!w ship has arrived. Please enter your ship.} {enter ship};
+
+
+#nop Hunt;
+#action {^%w leaves %w.} {
+    #local who {%1};
+    #format who {%l} {$who};
+    #if {"$who" == $enemy[name]} {
+        #send {%2}
+    }
+}
+#class misc close;

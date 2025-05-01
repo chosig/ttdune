@@ -39,7 +39,9 @@
     #local gxpct {@math{$gxcur * 100 / $gxmax}};
 
     #local ret {};
-    #format ret {%s %s} {[<acf>G<ccc>$GMCP[Char][Guild][Stats][GuildLevel]<099>}  {<fca>@n2h{$gxleft}<099>]};
+    #format ret {%s %s}
+        {[<acf>G<ccc>$GMCP[Char][Guild][Stats][GuildLevel]<099>}
+        {<fca>@n2h{$gxleft}<099>]};
     #return {$ret};
 }
 
@@ -63,7 +65,10 @@
 
 #function {money} {
     #local ret {};
-    #format ret {%s%s%s} {[<afa>$<099>} {@n2h{$GMCP[Char][Status][money]}<bbb>|<099>@n2h{$GMCP[Char][Status][bankmoney]}} {]};
+    #format ret {%s%s%s}
+        {[<afa>$<099>}
+        {@n2h{$GMCP[Char][Status][money]}<bbb>|<099>@n2h{$GMCP[Char][Status][bankmoney]}}
+        {]};
     #return {$ret}
 }
 
@@ -83,8 +88,21 @@
 
 #alias {/status_draw} {
     #nop %0;
-    #nop /status_clear;
-    #delay {0.1} {#line ignore #showme {@hp{} @cp{} @enemy{}@mat{}@pwr{}@fuses{}@burden{}@gxp{}@xp{}@money{}} {-2} {1}};
+    #var status_line {@hp{} @cp{} @enemy{}@mat{}@pwr{}@fuses{}@burden{}@gxp{}@xp{}@money{}};
+
+    #local len {0};
+    #format len {%L} {$line};
+
+    #local width {};
+    #screen {get} {cols} {width};
+
+    #math len {$width - $len - 1};
+
+    #local spacer {};
+    #loop 1 $len _ {#cat spacer { }};
+
+    #cat status_line {$spacer};
+    #delay {0} {#line ignore #showme {$status_line} {-2}};
 }
 
 /event.register GMCP.Char.Vitals update_status /status_draw;
